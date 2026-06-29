@@ -1,0 +1,4 @@
+# Tier-1 real simulator (MuJoCo). Needs Python 3.11/3.12 — there is no cp39
+# wheel for this macOS, so install these in a 3.12 venv (see README).
+# Pinned to 3.3.0 so the same venv also runs Tier-2 (robosuite needs ==3.3.0).
+mujoco==3.3.0

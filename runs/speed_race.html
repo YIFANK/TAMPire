@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TAMPire — Speed in Action</title>
+<style>
+  :root{--bg:#0a0e14;--panel:#121823;--line:#1e2a3a;--txt:#dfe7f1;--dim:#7c8aa0;
+    --accent:#4ea1ff;--good:#37d39a;--bad:#ff7a86;--warn:#ffc861;--mono:'SFMono-Regular',Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0;height:100vh;background:radial-gradient(1100px 650px at 70% -10%,#13203200,#070a10),var(--bg);
+    color:var(--txt);font-family:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;
+    padding:30px 44px;overflow:hidden}
+  .logo{font-size:24px;font-weight:800}.logo .o{color:var(--accent)}
+  .tag{color:var(--dim);font-size:14px;margin:3px 0 4px}
+  h1{font-size:20px;margin:14px 0 2px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:24px}
+  .lane{margin:20px 0}
+  .lhead{display:flex;align-items:baseline;gap:12px;margin-bottom:9px}
+  .lhead .nm{font-size:17px;font-weight:700}
+  .lhead .mdl{font-size:12px;color:var(--dim);font-family:var(--mono)}
+  .lhead .t{margin-left:auto;font-family:var(--mono);font-size:22px;font-weight:700}
+  .track{position:relative;height:46px;background:#0c121b;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:9px 0 0 9px;transition:width .05s linear;
+    display:flex;align-items:center;justify-content:flex-start;padding-left:12px;font-family:var(--mono);font-size:12px;color:#04121f;font-weight:700}
+  .cer .fill{background:linear-gradient(90deg,#2b7cff,#5fd0ff)}
+  .gpu .fill{background:linear-gradient(90deg,#7a3b44,#c66)}
+  .flag{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--dim);opacity:0;transition:.3s}
+  .flag.on{opacity:1;color:var(--good)}
+  .ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:#4a5a70;margin-top:5px}
+  .verdict{margin-top:34px;font-size:16px;opacity:0;transition:.6s}
+  .verdict.on{opacity:1}
+  .verdict b{color:var(--good);font-size:30px;font-family:var(--mono)}
+  .note{color:var(--dim);font-size:11.5px;margin-top:auto;line-height:1.5}
+  .stat{display:inline-block;margin-right:22px;font-family:var(--mono);font-size:13px;color:var(--dim)}
+  .stat b{color:var(--txt)}
+  .btn{position:fixed;right:30px;top:26px;background:var(--accent);color:#04121f;border:none;border-radius:9px;
+    padding:8px 16px;font-weight:700;cursor:pointer}
+</style></head>
+<body>
+  <button class="btn" id="go">▶ Replay</button>
+  <div class="logo">TAMP<span class="o">ire</span></div>
+  <div class="tag">Speed in Action — Gemma-4 on Cerebras vs a GPU provider</div>
+  <h1>Same multi-agent debate workload · 5 reasoning calls (planner + 3 critics + repair)</h1>
+  <div class="sub">identical prompts, same token budget — measuring the serving stack, not the model</div>
+
+  <div class="lane cer">
+    <div class="lhead"><span class="nm">⚡ Cerebras</span><span class="mdl">gemma-4-31b</span>
+      <span class="t" id="t-cer" style="color:#5fd0ff">0.00s</span></div>
+    <div class="track"><div class="fill" id="f-cer"></div><span class="flag" id="flag-cer">✓ done</span></div>
+  </div>
+  <div class="lane gpu">
+    <div class="lhead"><span class="nm">🐢 Together (GPU)</span><span class="mdl">gemma-4-31b-it</span>
+      <span class="t" id="t-gpu" style="color:#e88">0.00s</span></div>
+    <div class="track"><div class="fill" id="f-gpu"></div><span class="flag" id="flag-gpu">✓ done</span></div>
+  </div>
+  <div class="ticks" id="ticks"></div>
+
+  <div class="verdict" id="verdict">
+    <span class="stat">time to generate the same plan <b id="s-time">—</b></span>
+    <span class="stat">throughput <b id="s-tok">—</b></span><br><br>
+    Same model (gemma-4-31b): Cerebras has <b id="s-x">2.8×</b> the throughput — fast enough to re-check perception after <i>every</i> robot action.
+  </div>
+
+  <div class="note" id="note"></div>
+
+<script>
+// same model on both; race = time to emit an identical 420-token plan (420/tok_s)
+const R = {
+  cer:{name:"Cerebras", total:1.67, tok:252, calls:[]},
+  gpu:{name:"Together", total:4.67, tok:90, calls:[]},
+};
+const MAX = R.gpu.total;                 // full track = slowest finisher
+const $=s=>document.querySelector(s);
+$("#note").innerHTML="Same model on both: google/gemma-4-31b-it on Cerebras vs Together's GPU serving. "+
+  "We report throughput (252 vs 90 tok/s) — Together didn't emit a natural stop, so raw wall-clock would be unfair. From "+
+  "<span style='font-family:monospace'>tampire.eval.speed_compare</span> against both APIs.";
+const ticks=$("#ticks"); for(let s=0;s<=Math.ceil(MAX);s+=2){const e=document.createElement("span");e.textContent=s+"s";ticks.appendChild(e);}
+
+let raf=null;
+function run(){
+  cancelAnimationFrame(raf);
+  $("#flag-cer").className="flag";$("#flag-gpu").className="flag";$("#verdict").className="verdict";
+  const SPEED=2.2;                        // playback acceleration
+  const t0=performance.now();
+  function frame(now){
+    const t=(now-t0)/1000*SPEED;          // simulated seconds
+    for(const k of ["cer","gpu"]){
+      const cur=Math.min(t,R[k].total);
+      $("#f-"+k).style.width=(cur/MAX*100)+"%";
+      $("#t-"+k).textContent=cur.toFixed(2)+"s";
+      if(t>=R[k].total){ $("#flag-"+k).className="flag on"; $("#f-"+k).textContent=R[k].tok+" tok/s"; }
+    }
+    if(t<MAX){ raf=requestAnimationFrame(frame); }
+    else{
+      $("#s-time").textContent=R.cer.total+"s  vs  "+R.gpu.total+"s";
+      $("#s-tok").textContent=R.cer.tok+"  vs  "+R.gpu.tok+" tok/s";
+      $("#s-x").textContent=(R.cer.tok/R.gpu.tok).toFixed(1)+"×";
+      $("#verdict").className="verdict on";
+    }
+  }
+  raf=requestAnimationFrame(frame);
+}
+$("#go").onclick=run; run();
+</script>
+</body></html>

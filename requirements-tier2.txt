@@ -1,0 +1,7 @@
+# Tier-2 recognized benchmark (robosuite, MuJoCo-based, real Panda arm).
+# robosuite 1.5 calls mj_fullM with the pre-3.4 signature, so mujoco MUST be
+# pinned to 3.3.0 (newer mujoco breaks it). 3.3.0 also runs the Tier-1 sim.
+# PyBullet benchmarks (VIMA-Bench, Ravens) are NOT usable here — pybullet has no
+# wheel for this macOS/Python and fails to build from source.
+robosuite>=1.5,<1.6
+mujoco==3.3.0

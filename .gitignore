@@ -1,0 +1,12 @@
+.venv/
+.venv312/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+*.egg-info/
+/tmp_*
+runs/
+*.mov
+MUJOCO_LOG.TXT
+MUJOCO_LOG.TXT.*

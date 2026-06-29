@@ -1,0 +1,8 @@
+# Tier-3 (RoboLab) runs ONLY on NVIDIA RTX GPU + Linux + Isaac Sim — see
+# tampire/tier3/README.md. Install RoboLab per its own instructions
+# (https://github.com/NVlabs/RoboLab): Python 3.11, `uv sync`, Isaac Lab.
+#
+# The TAMPire client itself adds NO new Python deps beyond the core requirements
+# (numpy + pillow + rich). The off-hardware self-test
+#   python -m tampire.tier3.selftest
+# needs only requirements.txt. This file is a pointer, intentionally empty of pins.

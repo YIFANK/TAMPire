@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TAMPire — Agent Architecture</title>
+<style>
+:root{
+  --font-sans:'Lato','Inter',-apple-system,Segoe UI,Roboto,sans-serif;
+  --font-mono:'SFMono-Regular',Menlo,Consolas,monospace;
+  --bg:#0a0e14; --surface-0:#0c1119; --surface-1:#121823; --border:#1f2a38;
+  --border-strong:#2c3a4d; --text-primary:#e6edf6; --text-secondary:#aebacd;
+  --text-muted:#6f7d93; --radius:8px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1100px 650px at 75% -12%,#13243800,#070a10),var(--bg);
+  color:var(--text-primary);font-family:var(--font-sans);padding:20px 26px}
+.tm{max-width:1240px;margin:0 auto}
+.top-bar{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+.top-title{font-size:23px;font-weight:900;letter-spacing:.3px}
+.top-title .o{color:#85b7eb}
+.top-sub{font-size:13px;color:var(--text-muted)}
+.top-badge{margin-left:auto;font-size:11px;padding:4px 11px;border-radius:999px;background:#0d2438;border:1px solid #1d4d6b;color:#7fd0ff;font-family:var(--font-mono)}
+.lede{font-size:12.5px;color:var(--text-secondary);margin:6px 0 16px;max-width:880px;line-height:1.5}
+
+.flow{display:grid;grid-template-columns:1fr 60px 1fr 60px 1fr;align-items:stretch;gap:0;margin-bottom:14px}
+.arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--text-muted);padding:0 2px}
+.arrow .ln{font-size:8.5px;font-family:var(--font-mono);text-align:center;line-height:1.3;color:#7c8aa0;white-space:nowrap}
+.arrow .gl{font-size:22px;line-height:1;color:var(--text-muted)}
+
+.card{background:var(--surface-1);border-radius:13px;border:1px solid var(--border);padding:0;overflow:hidden;display:flex;flex-direction:column}
+.card.green{box-shadow:inset 0 2px 0 #5dcaa5}
+.card.amber{box-shadow:inset 0 2px 0 #ef9f27}
+.card.blue{box-shadow:inset 0 2px 0 #85b7eb}
+.chead{display:flex;align-items:center;gap:8px;padding:13px 15px 10px}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.green .dot{background:#5dcaa5}.amber .dot{background:#ef9f27}.blue .dot{background:#85b7eb}
+.cname{font-size:15px;font-weight:800}
+.crole{font-size:10.5px;color:var(--text-muted);margin-left:auto;font-family:var(--font-mono);padding:3px 8px;border:1px solid var(--border);border-radius:999px}
+.cjob{font-size:11.5px;color:var(--text-secondary);padding:0 15px 11px;line-height:1.45;border-bottom:1px solid var(--border)}
+
+.io{padding:11px 15px}
+.io+.io{border-top:1px dashed var(--border)}
+.iolabel{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.iolabel.in{color:#7fd0ff}.iolabel.out{color:#9fe1cb}
+.iolabel .pin{font-size:11px}
+.row{display:flex;gap:7px;font-size:11.5px;font-family:var(--font-mono);color:var(--text-secondary);padding:3px 0;line-height:1.4}
+.row .b{color:var(--text-muted);flex-shrink:0}
+.row .hl{color:var(--text-primary)}
+.green .row .hl{color:#9fe1cb}.amber .row .hl{color:#fac775}.blue .row .hl{color:#b5d4f4}
+
+.loop{display:flex;align-items:center;gap:10px;background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:13px 16px;margin-bottom:12px}
+.loop .tag{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:#7fd0ff;flex-shrink:0}
+.loop .txt{font-size:12px;color:var(--text-secondary);line-height:1.5;font-family:var(--font-mono)}
+.loop .txt b{color:#9fe1cb;font-weight:700}
+.loop .txt .x{color:#ff9aa6}
+
+.council{background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:13px 16px}
+.council .clabel{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:#fac775;margin-bottom:10px}
+.crow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.node{font-size:11.5px;font-family:var(--font-mono);padding:6px 11px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-0);color:var(--text-secondary)}
+.node b{color:var(--text-primary)}
+.node.plan{border-color:#5a4416}.node.crit{border-color:#2c3a4d}.node.rep{border-color:#1d6e54;color:#9fe1cb}
+.sep{color:var(--text-muted);font-size:16px}
+.crit-grp{display:flex;gap:6px;flex-wrap:wrap}
+.foot{font-size:11px;color:var(--text-muted);margin-top:10px;font-family:var(--font-mono)}
+</style></head>
+<body><div class="tm">
+  <div class="top-bar">
+    <span class="top-title">TAMP<span class="o">ire</span></span>
+    <span class="top-sub">agent architecture · who reads what, who emits what</span>
+    <span class="top-badge">Gemma-4-31B × Cerebras</span>
+  </div>
+  <div class="lede">Three specialized agents in a closed loop. Perception reads the world from pixels, the planner reasons symbolically over predicates, the controller turns skills into motor commands — and perception verifies <i>every</i> action before the next one runs.</div>
+
+  <div class="flow">
+    <!-- Gemma perception -->
+    <div class="card green">
+      <div class="chead"><span class="dot"></span><span class="cname">Gemma perception</span><span class="crole">Gemma-4 · multimodal</span></div>
+      <div class="cjob">Reads scene state directly from camera pixels and answers symbolic predicate queries.</div>
+      <div class="io"><div class="iolabel in"><span class="pin">▼</span>input</div>
+        <div class="row"><span class="b">img</span><span>multi-cam <span class="hl">RGB frames</span></span></div>
+        <div class="row"><span class="b">ask</span><span>predicate query — <span class="hl">holding(obj)?</span> · <span class="hl">in_bin(obj)?</span></span></div>
+      </div>
+      <div class="io"><div class="iolabel out"><span class="pin">▲</span>output</div>
+        <div class="row"><span class="b">bool</span><span><span class="hl">YES / NO</span> verdict</span></div>
+        <div class="row"><span class="b">why</span><span>NL reason — "gripper holds can"</span></div>
+        <div class="row"><span class="b">xyz</span><span>object <span class="hl">location</span> estimate</span></div>
+        <div class="row"><span class="b">ms</span><span>~900 ms / check</span></div>
+      </div>
+    </div>
+
+    <div class="arrow"><span class="gl">→</span><span class="ln">predicate<br>state</span></div>
+
+    <!-- TAMP planner -->
+    <div class="card amber">
+      <div class="chead"><span class="dot"></span><span class="cname">TAMP planner</span><span class="crole">symbolic · council</span></div>
+      <div class="cjob">Reasons over goal + predicate state to emit an ordered skill plan; replans when a predicate fails.</div>
+      <div class="io"><div class="iolabel in"><span class="pin">▼</span>input</div>
+        <div class="row"><span class="b">goal</span><span><span class="hl">sort groceries → bins</span></span></div>
+        <div class="row"><span class="b">state</span><span>predicates from Gemma</span></div>
+      </div>
+      <div class="io"><div class="iolabel out"><span class="pin">▲</span>output</div>
+        <div class="row"><span class="b">plan</span><span><span class="hl">locate → grasp → place</span></span></div>
+        <div class="row"><span class="b">re</span><span>replan signal on failed predicate</span></div>
+        <div class="row"><span class="b">tgt</span><span>next skill + target object</span></div>
+      </div>
+    </div>
+
+    <div class="arrow"><span class="gl">→</span><span class="ln">skill +<br>target</span></div>
+
+    <!-- Motor controller -->
+    <div class="card blue">
+      <div class="chead"><span class="dot"></span><span class="cname">Motor controller</span><span class="crole">OSC · velocity</span></div>
+      <div class="cjob">Turns a symbolic skill into closed-loop motor commands on the real robot interface.</div>
+      <div class="io"><div class="iolabel in"><span class="pin">▼</span>input</div>
+        <div class="row"><span class="b">skill</span><span>grasp / place + target</span></div>
+        <div class="row"><span class="b">grasp</span><span>analytic height — <span class="hl">bbox half-size</span></span></div>
+      </div>
+      <div class="io"><div class="iolabel out"><span class="pin">▲</span>output</div>
+        <div class="row"><span class="b">osc</span><span><span class="hl">end-effector + gripper</span> cmds</span></div>
+        <div class="row"><span class="b">base</span><span>unicycle velocity (mobile)</span></div>
+        <div class="row"><span class="b">done</span><span>action complete <span class="hl">(unverified)</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loop">
+    <span class="tag">closed loop</span>
+    <span class="txt">Motor → <b>Gemma verifies(action)</b> → if <span class="x">predicate = false</span> → Planner <b>re-perceives &amp; replans</b> → Motor <b>retries</b>.&nbsp; Cerebras throughput (2.8× a GPU) makes per-action perception affordable.</span>
+  </div>
+
+  <div class="council">
+    <div class="clabel">inside the planner · multi-agent council</div>
+    <div class="crow">
+      <span class="node plan"><b>Planner</b> drafts plan</span>
+      <span class="sep">→</span>
+      <span class="crit-grp">
+        <span class="node crit"><b>Critic 1</b> reachability</span>
+        <span class="node crit"><b>Critic 2</b> ordering</span>
+        <span class="node crit"><b>Critic 3</b> feasibility</span>
+      </span>
+      <span class="sep">→</span>
+      <span class="node rep"><b>Repair chair</b> merges critiques → final plan</span>
+    </div>
+    <div class="foot">5 reasoning calls per decision — all Gemma-4-31B on Cerebras (~250 tok/s).</div>
+  </div>
+</div>
+</body></html>
